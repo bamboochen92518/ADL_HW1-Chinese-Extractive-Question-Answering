@@ -1,6 +1,21 @@
 # ADL HW1 Chinese Extractive Question Answering
 
-## 執行流程
+## 執行
+
+```bash
+bash ./download.sh
+bash ./run.sh /path/to/context.json /path/to/test.json /path/to/pred/prediction.csv
+```
+
+### `download.sh`
+
+下載六個已經訓練完成的模型，其中三個用於 Paragraph Selection ，另外三個用於 Question Answering 。
+
+### `run.sh`
+
+將測試資料輸入模型，並輸出預測結果。
+
+## 完整訓練過程
 
 ### Part 1. Paragraph Selection
 
