@@ -54,15 +54,9 @@ from transformers import (
 )
 from transformers.utils import PaddingStrategy, check_min_version, send_example_telemetry
 
-
-# Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-# check_min_version("4.35.0.dev0")
-
 logger = get_logger(__name__)
-# You should update this to your particular problem to have better documentation of `model_type`
 MODEL_CONFIG_CLASSES = list(MODEL_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Finetune a transformers model on a multiple choice task")
@@ -121,11 +115,6 @@ def parse_args():
         help="Pretrained tokenizer name or path if not the same as model_name",
     )
     parser.add_argument(
-        "--use_slow_tokenizer",
-        action="store_true",
-        help="If passed, will use a slow tokenizer (not backed by the 🤗 Tokenizers library).",
-    )
-    parser.add_argument(
         "--per_device_train_batch_size",
         type=int,
         default=2,
@@ -143,7 +132,6 @@ def parse_args():
         default=3e-5,
         help="Initial learning rate (after the potential warmup period) to use.",
     )
-    parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay to use.")
     parser.add_argument("--num_train_epochs", type=int, default=1, help="Total number of training epochs to perform.")
     parser.add_argument(
         "--max_train_steps",
@@ -419,11 +407,11 @@ def main():
 
     if args.tokenizer_name:
         tokenizer = AutoTokenizer.from_pretrained(
-            args.tokenizer_name, use_fast=not args.use_slow_tokenizer, trust_remote_code=args.trust_remote_code
+            args.tokenizer_name, use_fast=True, trust_remote_code=args.trust_remote_code
         )
     elif args.model_name_or_path:
         tokenizer = AutoTokenizer.from_pretrained(
-            args.model_name_or_path, use_fast=not args.use_slow_tokenizer, trust_remote_code=args.trust_remote_code
+            args.model_name_or_path, use_fast=True, trust_remote_code=args.trust_remote_code
         )
     else:
         raise ValueError(
@@ -513,7 +501,7 @@ def main():
     optimizer_grouped_parameters = [
         {
             "params": [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
-            "weight_decay": args.weight_decay,
+            "weight_decay": 0.0,
         },
         {
             "params": [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)],
