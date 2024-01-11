@@ -1,25 +1,29 @@
 # ADL HW1 Chinese Extractive Question Answering
 
-## 執行
+### Task Description
+
+The input for this task consists of four paragraphs and a question that we aim to answer. Initially, our objective is to identify the relevant paragraph. Subsequently, we must ascertain the starting and ending positions of the answer span. The models required for this task include a multiple-choice model and an extracted QA model. 
+
+### How to Run
 
 ```bash
 bash ./download.sh
 bash ./run.sh /path/to/context.json /path/to/test.json /path/to/pred/prediction.csv
 ```
 
-### `download.sh`
+#### `download.sh`
 
-下載六個已經訓練完成的模型，其中三個用於 Paragraph Selection ，另外三個用於 Question Answering 。
+Download six pre-trained models, with three dedicated to Paragraph Selection and the remaining three for Question Answering.
 
-### `run.sh`
+#### `run.sh`
 
-將測試資料輸入模型，並輸出預測結果。
+Input the test data into the model and generate the predicted results. 
 
-## 完整訓練過程
+### Complete Training Process
 
-### Part 1. Paragraph Selection
+#### Part 1. Paragraph Selection
 
-#### Step 1-1 Training
+##### Step 1-1 Training
 
 ```bash
 $ python 4-to-1_train.py --model_name_or_path shibing624/text2vec-base-chinese --output_dir 4-to-1_t2v
@@ -27,35 +31,35 @@ $ python 4-to-1_train.py --model_name_or_path hfl/chinese-roberta-wwm-ext --outp
 $ python 4-to-1_train.py --model_name_or_path bert-base-chinese --output_dir 4-to-1_bert
 ```
 
-這步完成之後會生成三個 model，因為執行時間有限，所以這三個 model 會透過 `download.sh` 下載。
+After completing this step, three models will be generated. Due to limited execution time, these three models will be downloaded using `download.sh`. 
 
-程式碼主要是從 `run_swag_no_trainer.py` [1] 做修改，有做調整的 hyper parameter 如下：
+The code is primarily modified from `run_swag_no_trainer.py` [1], with adjusted hyperparameters as follows: 
 
-| arguments                       | value           |
-| ------------------------------- | --------------- |
-| `--max_seq_length`              | `512`           |
-| `--model_name_or_path`          | 三個 model 不同 |
-| `--per_device_train_batch_size` | `2`             |
-| `--per_device_eval_batch_size`  | `1`             |
-| `--learning_rate`               | `3e-5`          |
-| `--num_train_epochs`            | `1`             |
-| `--gradient_accumulation_steps` | `2`             |
+| arguments                       | value                  |
+| ------------------------------- | ---------------------- |
+| `--max_seq_length`              | `512`                  |
+| `--model_name_or_path`          | Three different models |
+| `--per_device_train_batch_size` | `2`                    |
+| `--per_device_eval_batch_size`  | `1`                    |
+| `--learning_rate`               | `3e-5`                 |
+| `--num_train_epochs`            | `1`                    |
+| `--gradient_accumulation_steps` | `2`                    |
 
-除了調整參數之外，在`load_datasets`之後，還需要將`raw_datasets["train"]`和`raw_datasets["validation"]`的資料格式改成 Multiple choice 能夠接受的格式，才能進行後續的訓練。Multiple choice 可接受的格式如下：
+"Besides adjusting parameters, after the `load_datasets` step, it is necessary to modify the data format of `raw_datasets["train"]` and `raw_datasets["validation"]` into a format compatible with Multiple Choice for subsequent training. The acceptable format for Multiple Choice is as follows: 
 
 ```
 {'ending0', 'ending1', 'ending2', 'ending3', 'label', 'sent1', 'sent2'}
 ```
 
-`ending0` - `ending3` 需要從 `paragraph` 的 `index` 以及 `context.json` 拿取。
+`ending0` - `ending3` need to be extracted from the `paragraph` using the `index` and `context.json`.
 
-`label` 為 `0-3` 的數，表示答案為 `ending 0` - `ending3` 中的哪一個。
+`label` is a number ranging from `0-3`, indicating which of the endings (`ending 0` - `ending3`) is the correct answer.
 
-`sent1` 為 `question`，`sent2` 為空字串。
+`sent1` represents the `question`, while `sent2` is an empty string.
 
-因為`sent1`和`sent2`最後會接在一起變成`startphrase`，所以`sent2`是空字串並不影響訓練模型。
+Since `sent1` and `sent2` will be concatenated into the `startphrase`, having an empty string for `sent2` does not impact the training of the model."
 
-#### Step 1-2 Testing
+##### Step 1-2 Testing
 
 ```bash
 $ python 4-to-1_test.py --model_name_or_path 4-to-1_bert/ --output_json 4-to-1_bert.json --validation_file ${2} --context_file ${1}
@@ -63,43 +67,43 @@ $ python 4-to-1_test.py --model_name_or_path 4-to-1_hfl/ --output_json 4-to-1_hf
 $ python 4-to-1_test.py --model_name_or_path 4-to-1_t2v/ --output_json 4-to-1_t2v.json --validation_file ${2} --context_file ${1}
 ```
 
-這步完成之後會用剛剛生成的三個 model 預測結果，並產生三個相對應的 json file。
+After completing this step, the three recently generated models will be used to predict results and generate three corresponding JSON files.
 
-程式碼主要是從 `4-to-1_train.py`做修改，只是將訓練的過程刪除，改成用剛剛訓練好的模型進行訓練。有做調整的 hyper parameter 如下：
+The code is primarily modified from `4-to-1_train.py`, with the training process removed and replaced with using the just-trained models. The adjusted hyperparameters are as follows:
 
-| arguments              | value                                                       |
-| ---------------------- | ----------------------------------------------------------- |
-| `--model_name_or_path` | 三個 model 不一樣（對應 `4-to-1_train.py` 的 `output_dir`） |
+| arguments              | value                                                        |
+| ---------------------- | ------------------------------------------------------------ |
+| `--model_name_or_path` | Three different models (corresponding to `output_dir` in `4-to-1_train.py`) |
 
-特別的是，輸出的資料格式要改成 Question answering 能夠接受的格式，才能進行後續的訓練。Question answering 可接受的格式如下：
+Notably, the output data format needs to be modified to a format acceptable for Question Answering for subsequent training. The acceptable format for Question Answering is as follows:
 
 ```
 {'answers': {'answer_start', 'text'}, 'context', 'id', 'question'}
 ```
 
-因為要拿來測試的資料本來就沒有`answers`，所以`answer_start = [0]`，`text = ['']`。
+Since the test data originally does not have `answers`, `answer_start = [0]`, and `text = ['']`.
 
-`context` 為經過模型訓練後，從四個候選段落選擇出來的結果。
+`context` represents the result selected from the four candidate paragraphs after the model training.
 
-#### Step 1-3 Voting
+##### Step 1-3 Voting
 
 ```bash
 $ python 4-to-1_voting.py
 ```
 
-這步主要是在做投票，這裡會以 `bert` 訓練出來的模型為主，也就是說如果三種模型預測的結果都不一樣，則會以 `bert` 的結果當作答案。反之，如果有兩個以上的模型選擇同一個答案，就會以該答案為最終結果。完成之後會產生`final_test.json` 這個檔案作為 question answering 的輸入。
+This step primarily involves conducting a vote, where the model trained with `bert` takes precedence. In other words, if the results predicted by the three models are different, the result from `bert` will be considered as the answer. Conversely, if two or more models select the same answer, that answer will be deemed the final result. Upon completion, a file named `final_test.json` will be generated as the input for question answering.
 
-### Part 2. Question Answering
+#### Part 2. Question Answering
 
-#### Step 2-1 Data Pre-processing
+##### Step 2-1 Data Pre-processing
 
 ```bash
 $ python data_for_qa.py
 ```
 
-這步主要是將 train data 和 validation data 的格式轉換成 question answering 能夠接受的格式。
+This step mainly involves converting the formats of the train data and validation data into a format compatible with question answering. 
 
-#### Step 2-2 Training
+##### Step 2-2 Training
 
 ```bash
 $ python 1-to-ans_train_roberta.py --model_name_or_path hfl/chinese-roberta-wwm-ext --output_dir 1-to-ans_e5b8l1_hfl --num_train_epochs 5 --learning_rate 1e-5 --per_device_train_batch_size 8
@@ -107,9 +111,9 @@ $ python 1-to-ans_train.py --model_name_or_path shibing624/text2vec-base-chinese
 $ python 1-to-ans_train.py --model_name_or_path shibing624/text2vec-base-chinese --output_dir 1-to-ans_e5b8l1_t2v --num_train_epochs 5 --learning_rate 1e-5 --per_device_train_batch_size 8
 ```
 
-這步完成之後會也會生成三個 model，因為執行時間有限，所以這三個 model 會透過 `download.sh` 下載。
+After completing this step, three models will also be generated. Due to limited execution time, these three models will be downloaded using `download.sh`.
 
-程式碼主要是從 `run_qa_no_trainer.py` [3] 取 training 的部份再做修改，有做調整的 hyper parameter 如下：
+The code is primarily modified from the training section of `run_qa_no_trainer.py` [3], with adjusted hyperparameters as follows:
 
 | arguments                       | value                                                        |
 | ------------------------------- | ------------------------------------------------------------ |
@@ -121,7 +125,7 @@ $ python 1-to-ans_train.py --model_name_or_path shibing624/text2vec-base-chinese
 | `--num_train_epochs`            | `5`                                                          |
 | `--gradient_accumulation_steps` | `4`                                                          |
 
-#### Step 2-3 Testing
+##### Step 2-3 Testing
 
 ```bash
 $ python 1-to-ans_test.py --test_file final_test.json --model_name_or_path 1-to-ans_e5b4l1_t2v --output_csv output_e5b4l1_t2v.csv
@@ -129,15 +133,15 @@ $ python 1-to-ans_test.py --test_file final_test.json --model_name_or_path 1-to-
 $ python 1-to-ans_test.py --test_file final_test.json --model_name_or_path 1-to-ans_e5b8l1_hfl --output_csv output_e5b8l1_hfl.csv
 ```
 
-這步完成之後會用剛剛生成的三個 model 預測結果，並產生三個相對應的 csv file。
+After completing this step, the three recently generated models will be used to predict results, generating three corresponding CSV files.
 
-程式碼主要是從 `run_qa_no_trainer.py` [3] 取 testing 的部份再做修改，有做調整的參數如下：
+The code is primarily modified from the testing section of `run_qa_no_trainer.py` [3], with adjusted parameters as follows:
 
-| arguments              | value                                                       |
-| ---------------------- | ----------------------------------------------------------- |
-| `--model_name_or_path` | 三個 model 不一樣（對應 `4-to-1_train.py` 的 `output_dir`） |
+| arguments              | value                                                        |
+| ---------------------- | ------------------------------------------------------------ |
+| `--model_name_or_path` | Three different models (corresponding to `output_dir` in `1-to-ans_train.py`) |
 
-#### Step 2-4 Data Post-processing
+##### Step 2-4 Data Post-processing
 
 ```bash
 $ python bracket_filled.py --test_file output_e5b4l1_t2v.csv --out_file output_e5b4l1_t2v_final.csv
@@ -145,30 +149,30 @@ $ python bracket_filled.py --test_file output_e5b8l1_t2v.csv --out_file output_e
 $ python bracket_filled.py --test_file output_e5b8l1_hfl.csv --out_file output_e5b8l1_hfl_final.csv
 ```
 
-這步主要是將可能不合理的答案改成較合理的答案，例如：如果預測結果只有左括弧卻沒有右括弧，則會在答案的最後補上右括弧。這樣做能夠稍微提升正確率。
+This step primarily involves converting potentially unreasonable answers into more sensible ones. For example, if the predicted result contains only a left parenthesis without a corresponding right parenthesis, the right parenthesis will be appended at the end of the answer. This adjustment helps improve accuracy to some extent. 
 
-#### Step 2-5 Voting
+##### Step 2-5 Voting
 
 ```bash
 $ python 1-to-ans_voting.py --out_file ${3}
 ```
 
-這步主要是在做投票，這裡會以 `hfl` 訓練出來的模型為主，也就是說如果三種模型預測的結果都不一樣，則會以 `hfl` 的結果當作答案。反之，如果有兩個以上的模型預測相同的答案，就會以該答案為最終結果。完成之後會在 `run.sh` 給定的路徑生成最終的結果。
+This step mainly involves conducting a vote, with the model trained by `hfl` taking the lead. In other words, if the results predicted by the three models differ, the outcome from `hfl` will be considered as the answer. Conversely, if two or more models predict the same answer, that answer will be deemed the final result. Upon completion, the final results will be generated at the path specified in `run.sh`. 
 
-相關資料：
+Reference: 
 
-[1] `run_swag_no_trainer.py`原始碼
+[1] `run_swag_no_trainer.py` source code
 
 https://github.com/huggingface/transformers/blob/main/examples/pytorch/multiple-choice/run_swag_no_trainer.py
 
-[2] Multiple choice 相關資料
+[2] Multiple choice related work
 
 https://huggingface.co/docs/transformers/tasks/multiple_choice
 
-[3] `run_qa_no_trainer.py`原始碼
+[3] `run_qa_no_trainer.py` source code
 
 https://github.com/huggingface/transformers/blob/main/examples/pytorch/question-answering/run_qa_no_trainer.py
 
-[4] Question answering 相關資料
+[4] Question answering related work
 
 https://huggingface.co/docs/transformers/tasks/question_answering
