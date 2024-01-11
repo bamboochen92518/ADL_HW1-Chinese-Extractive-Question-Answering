@@ -176,3 +176,7 @@ https://github.com/huggingface/transformers/blob/main/examples/pytorch/question-
 [4] Question answering related work
 
 https://huggingface.co/docs/transformers/tasks/question_answering
+
+Homework Spec:
+
+https://docs.google.com/presentation/d/1EcHhZB_aBX3dGJ6odcBHvkuD6SYg5SNAvzO1soObuYY/edit#slide=id.p
