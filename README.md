@@ -73,7 +73,7 @@ The code is primarily modified from `4-to-1_train.py`, with the training process
 
 | arguments              | value                                                        |
 | ---------------------- | ------------------------------------------------------------ |
-| `--model_name_or_path` | Three different models (corresponding to `output_dir` in `4-to-1_train.py`) |
+| `--model_name_or_path` | Three different models <br>(corresponding to `output_dir` in `4-to-1_train.py`) |
 
 Notably, the output data format needs to be modified to a format acceptable for Question Answering for subsequent training. The acceptable format for Question Answering is as follows:
 
@@ -118,7 +118,7 @@ The code is primarily modified from the training section of `run_qa_no_trainer.p
 | arguments                       | value                                                        |
 | ------------------------------- | ------------------------------------------------------------ |
 | `--max_seq_length`              | `512`                                                        |
-| `--model_name_or_path`          | `hfl/chinese-roberta-wwm-ext` or `shibing624/text2vec-base-chinese` |
+| `--model_name_or_path`          | `hfl/chinese-roberta-wwm-ext` or <br/>`shibing624/text2vec-base-chinese` |
 | `--per_device_train_batch_size` | `4` or `8`                                                   |
 | `--per_device_eval_batch_size`  | `1`                                                          |
 | `--learning_rate`               | `1e-5`                                                       |
@@ -139,7 +139,7 @@ The code is primarily modified from the testing section of `run_qa_no_trainer.py
 
 | arguments              | value                                                        |
 | ---------------------- | ------------------------------------------------------------ |
-| `--model_name_or_path` | Three different models (corresponding to `output_dir` in `1-to-ans_train.py`) |
+| `--model_name_or_path` | Three different models <br/>(corresponding to `output_dir` in `1-to-ans_train.py`) |
 
 ##### Step 2-4 Data Post-processing
 
